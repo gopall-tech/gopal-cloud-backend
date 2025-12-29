@@ -1,61 +1,55 @@
 const express = require('express');
+const multer = require('multer');
 const { Pool } = require('pg');
-const cors = require('cors');
-require('dotenv').config();
-
 const app = express();
-const port = process.env.PORT || 3001;
+const port = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors());
+// PostgreSQL Connection
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
+
+// Configure Multer (Using Memory Storage)
+const upload = multer({ storage: multer.memoryStorage() });
+
 app.use(express.json());
 
-// Database Connection
-const pool = new Pool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  port: 5432,
-  ssl: { rejectUnauthorized: false } // Required for Azure
-});
-
-// Root Route
-app.get('/', (req, res) => {
-  res.send('Backend A is Running!');
-});
-
-// The Main Endpoint (Matches the David Reference)
-app.get('/api/a', async (req, res) => {
+// The NEW Upload Route
+app.post('/upload', upload.single('file'), async (req, res) => {
   try {
-    // 1. Log the request to the Database
-    const client = await pool.connect();
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    // Save metadata to the database
     const query = `
-      INSERT INTO requests (backend_name, ts, meta) 
-      VALUES ($1, NOW(), $2) 
+      INSERT INTO uploads (backend_name, file_name, file_size, mime_type)
+      VALUES ($1, $2, $3, $4)
       RETURNING *;
     `;
-    const values = ['backend-a', { uploaded: true }];
-    const result = await client.query(query, values);
-    client.release();
+    const values = [
+      process.env.BACKEND_NAME || 'backend-a', 
+      req.file.originalname,
+      req.file.size,
+      req.file.mimetype
+    ];
 
-    // 2. Send response to UI
+    const dbRes = await pool.query(query, values);
+
     res.json({
-      backend: 'backend-a',
-      message: 'Hello from Backend A',
-      db_entry: result.rows[0]
+      message: 'File metadata saved successfully',
+      file: req.file.originalname,
+      db_entry: dbRes.rows[0]
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Database connection failed', details: err.message });
+    res.status(500).json({ error: 'Database insertion failed' });
   }
 });
 
-// Health Check
-app.get('/health', (req, res) => {
-  res.status(200).send('OK');
-});
+// Keep your old test routes if you want
+app.get('/api/a', async (req, res) => { /* ... existing code ... */ });
 
 app.listen(port, () => {
-  console.log(`Backend A listening on port ${port}`);
+  console.log(`Backend running on port ${port}`);
 });

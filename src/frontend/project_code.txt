@@ -1,0 +1,141 @@
+File: .env
+-------------------
+REACT_APP_API_URL=https://Gopal-apim-dev-eastus2.azure-api.net
+
+------eof---------
+
+
+File: package.json
+-------------------
+{
+  "name": "gopal-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "axios": "^1.6.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "^5.0.1"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}
+
+------eof---------
+
+
+File: public\index.html
+-------------------
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Gopal Cloud Platform</title>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
+------eof---------
+
+
+File: src\App.css
+-------------------
+body { font-family: sans-serif; margin: 0; }
+.app-container { display: flex; height: 100vh; }
+.split-pane { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; }
+.pane-a { background-color: #ffffff; border-right: 1px solid #ddd; }
+.pane-b { background-color: #f8f9fa; }
+.upload-btn { padding: 15px 30px; font-size: 1.2rem; color: white; border: none; border-radius: 8px; cursor: pointer; margin-top: 20px; }
+.btn-a { background-color: #0078d4; }
+.btn-b { background-color: #107c10; }
+pre { background: #eee; padding: 1rem; border-radius: 5px; margin-top: 20px; text-align: left; }
+
+------eof---------
+
+
+File: src\App.js
+-------------------
+import React, { useState } from 'react';
+import axios from 'axios';
+import './App.css';
+
+const API_BASE_URL = process.env.REACT_APP_API_URL;
+
+function App() {
+  const [responseA, setResponseA] = useState(null);
+  const [responseB, setResponseB] = useState(null);
+  const [loadingA, setLoadingA] = useState(false);
+  const [loadingB, setLoadingB] = useState(false);
+
+  const handleUpload = async (backend, setResponse, setLoading) => {
+    setLoading(true);
+    setResponse(null);
+    try {
+      const endpoint = backend === 'A' ? '/get-backend-a' : '/get-backend-b';
+      // CHANGED: Using simple addition to avoid PowerShell errors
+      const res = await axios.get(API_BASE_URL + endpoint);
+      setResponse(res.data);
+    } catch (error) {
+      console.error('Upload failed', error);
+      setResponse({ error: 'Upload Failed. Check console for details.' });
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className='app-container'>
+      <div className='split-pane pane-a'>
+        <h1>Backend A</h1>
+        <button className='upload-btn btn-a' onClick={() => handleUpload('A', setResponseA, setLoadingA)} disabled={loadingA}>
+          {loadingA ? 'Uploading...' : 'Upload to Backend A'}
+        </button>
+        {responseA && <pre>{JSON.stringify(responseA, null, 2)}</pre>}
+      </div>
+      <div className='split-pane pane-b'>
+        <h1>Backend B</h1>
+        <button className='upload-btn btn-b' onClick={() => handleUpload('B', setResponseB, setLoadingB)} disabled={loadingB}>
+          {loadingB ? 'Processing...' : 'Upload to Backend B'}
+        </button>
+        {responseB && <pre>{JSON.stringify(responseB, null, 2)}</pre>}
+      </div>
+    </div>
+  );
+}
+export default App;
+
+------eof---------
+
+
+File: src\index.js
+-------------------
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import './App.css';
+import App from './App';
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+
+------eof---------
+
+
