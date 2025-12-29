@@ -1,14 +1,11 @@
-# 1. Get current client config (to set Key Vault permissions for YOU)
 data "azurerm_client_config" "current" {}
 
-# 2. Generate a random password (so we don't hardcode it)
 resource "random_password" "pass" {
   length           = 20
   special          = true
   override_special = "_%@"
 }
 
-# 3. Private DNS Zone (Required for Private DBs)
 resource "azurerm_private_dns_zone" "dns" {
   name                = "${var.env}.postgres.database.azure.com"
   resource_group_name = var.resource_group_name
@@ -21,7 +18,6 @@ resource "azurerm_private_dns_zone_virtual_network_link" "dns_link" {
   resource_group_name   = var.resource_group_name
 }
 
-# 4. The Database Server (Cheapest Tier)
 resource "azurerm_postgresql_flexible_server" "psql" {
   name                   = var.server_name
   resource_group_name    = var.resource_group_name
@@ -32,8 +28,19 @@ resource "azurerm_postgresql_flexible_server" "psql" {
   administrator_login    = "gopaladmin"
   administrator_password = random_password.pass.result
   
-  sku_name   = "B_Standard_B1ms" # Cost Optimized
-  storage_mb = 32768             # Min storage
+  sku_name   = "B_Standard_B1ms"
+  storage_mb = 32768
+  
+  # FIX: Disable public access for private network support
+  public_network_access_enabled = false
+
+  # FIX: Ignore zone changes to prevent "Zone can only be changed..." errors
+  lifecycle {
+    ignore_changes = [
+      zone,
+      high_availability
+    ]
+  }
 
   depends_on = [azurerm_private_dns_zone_virtual_network_link.dns_link]
 }
@@ -45,8 +52,8 @@ resource "azurerm_postgresql_flexible_server_database" "db" {
   charset   = "utf8"
 }
 
-# 5. Key Vault (To store the password)
 resource "azurerm_key_vault" "kv" {
+  # STANDARD NAME (We purged the old ones, so this is safe now)
   name                = "gopal-kv-${var.env}-eastus2"
   location            = var.location
   resource_group_name = var.resource_group_name
