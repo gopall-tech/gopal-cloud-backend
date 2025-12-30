@@ -15,7 +15,7 @@ on:
 permissions:
   contents: read
 
-# Use the same service principal JSON for both Azure CLI (if needed) and Terraform
+# Use the same service principal JSON for both Azure CLI (if needed) and Terraform 
 env:
   ARM_CLIENT_ID:        ${{ fromJson(secrets.AZURE_CREDENTIALS).clientId }}
   ARM_CLIENT_SECRET:    ${{ fromJson(secrets.AZURE_CREDENTIALS).clientSecret }}
