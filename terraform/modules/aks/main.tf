@@ -29,3 +29,9 @@ resource "azurerm_kubernetes_cluster" "aks" {
     dns_service_ip = "172.16.0.10"
   }
 }
+# AUTOMATION FIX: Allow AKS to pull images from ACR automatically
+resource "azurerm_role_assignment" "acr_pull" {
+  scope                = var.acr_id
+  role_definition_name = "AcrPull"
+  principal_id         = azurerm_kubernetes_cluster.aks.kubelet_identity[0].object_id
+}

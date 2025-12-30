@@ -25,6 +25,9 @@ module "aks" {
   cluster_name        = "Gopal-aks-qa-eastus2"
   dns_prefix          = "gopal-aks-qa"
   subnet_id           = module.network.aks_subnet_id
+  
+  # PASS THE ACR ID HERE
+  acr_id              = module.acr.acr_id
 }
 
 # 4. Database Module
@@ -69,6 +72,7 @@ module "apim" {
   apim_name           = "Gopal-apim-qa-eastus2"
   publisher_name      = "Gopal Tech"
   publisher_email     = "admin@gopal.tech"
+  env                 = "qa"
 }
 
 resource "random_id" "unique" {

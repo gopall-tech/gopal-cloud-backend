@@ -17,7 +17,8 @@ resource "azurerm_linux_web_app" "web" {
     application_stack {
       node_version = "18-lts"
     }
-    app_command_line = "pm2 serve /home/site/wwwroot --no-daemon --spa"
+    # AUTOMATION FIX: Explicitly tell Azure to run the server script
+    app_command_line = "node server.js"
   }
 
   app_settings = {
