@@ -69,10 +69,15 @@ module "apim" {
   source              = "../../modules/apim"
   resource_group_name = azurerm_resource_group.rg.name
   location            = var.location
-  # ... other existing variables ...
-  
-  # ADD THIS LINE:
-  frontend_url        = "https://Gopal-web-qa-centralus.azurewebsites.net"
+
+  # --- RESTORED VARIABLES (You accidentally deleted these) ---
+  env             = "qa"
+  apim_name       = "gopal-apim-qa-eastus2"
+  publisher_name  = "Gopal Walia"
+  publisher_email = "Gopal.Walia@techconsulting.tech"
+
+  # --- THE NEW VARIABLE (Keep this) ---
+  frontend_url    = "https://Gopal-web-qa-centralus.azurewebsites.net"
 }
 
 resource "random_id" "unique" {
