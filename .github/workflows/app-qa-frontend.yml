@@ -15,7 +15,8 @@ permissions:
 env:
   AZURE_RESOURCE_GROUP_QA: Gopal-rg-qa-eastus2
   AZURE_WEBAPP_NAME_QA:    Gopal-web-qa-centralus
-  # FIXED: Removed the "/v1/api" suffix. App.js adds this automatically.
+  # FIXED: Removed "/v1/api" suffix. App.js adds the path automatically.
+  # If we leave it, you get a double path like /v1/api/v1/api...
   REACT_APP_API_URL:       "https://gopal-apim-qa-eastus2.azure-api.net"
 
 jobs:
@@ -42,6 +43,7 @@ jobs:
 
       - name: Build React App
         # FIXED: Added working-directory so it builds the correct folder
+        # Without this, it builds at root and IGNORES the env variable!
         working-directory: src/frontend
         run: npm run build
         env:
