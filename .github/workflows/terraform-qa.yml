@@ -1,12 +1,17 @@
 name: terraform-qa
 
 on:
+  push:
+    branches: [ main ]         # or your default branch
+    paths:
+      - "terraform/**"
   workflow_dispatch:
 
 jobs:
   terraform-qa:
     runs-on: ubuntu-latest
 
+    # >>> This is where Terraform gets its Azure credentials <<<
     env:
       ARM_CLIENT_ID:        ${{ secrets.ARM_CLIENT_ID }}
       ARM_CLIENT_SECRET:    ${{ secrets.ARM_CLIENT_SECRET }}

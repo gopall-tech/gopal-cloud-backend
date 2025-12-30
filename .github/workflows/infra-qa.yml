@@ -4,7 +4,7 @@ on:
   # Manual trigger from GitHub UI
   workflow_dispatch:
 
-  # Optional: auto-run when Terraform for QA changes
+  # Auto-run when Terraform for QA changes
   push:
     branches:
       - main
@@ -13,14 +13,14 @@ on:
       - 'terraform/modules/**'
 
 permissions:
-  id-token: write         # for OIDC auth
   contents: read
 
+# Use the same service principal JSON for both Azure CLI (if needed) and Terraform
 env:
-  ARM_USE_OIDC: true
-  ARM_CLIENT_ID:       ${{ fromJson(secrets.AZURE_CREDENTIALS).clientId }}
-  ARM_TENANT_ID:       ${{ fromJson(secrets.AZURE_CREDENTIALS).tenantId }}
-  ARM_SUBSCRIPTION_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).subscriptionId }}
+  ARM_CLIENT_ID:        ${{ fromJson(secrets.AZURE_CREDENTIALS).clientId }}
+  ARM_CLIENT_SECRET:    ${{ fromJson(secrets.AZURE_CREDENTIALS).clientSecret }}
+  ARM_TENANT_ID:        ${{ fromJson(secrets.AZURE_CREDENTIALS).tenantId }}
+  ARM_SUBSCRIPTION_ID:  ${{ fromJson(secrets.AZURE_CREDENTIALS).subscriptionId }}
 
 jobs:
   terraform-qa:
@@ -34,22 +34,17 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Azure login
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.9.8
 
       - name: Terraform Init
-        run: terraform init
+        run: terraform init -input=false
 
       - name: Terraform Plan
-        run: terraform plan
+        run: terraform plan -input=false
 
       - name: Terraform Apply (only on main)
         if: github.ref == 'refs/heads/main'
-        run: terraform apply -auto-approve
+        run: terraform apply -auto-approve -input=false
