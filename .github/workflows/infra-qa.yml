@@ -1,50 +1,47 @@
-name: Infra - QA (Terraform)
+name: Terraform QA
 
 on:
-  # Manual trigger from GitHub UI
-  workflow_dispatch:
-
-  # Auto-run when Terraform for QA changes
   push:
-    branches:
-      - main
+    branches: [ main ]
     paths:
       - 'terraform/environments/qa/**'
       - 'terraform/modules/**'
+      - '.github/workflows/infra-qa.yml'
+  workflow_dispatch:
 
 permissions:
+  id-token: write # <--- REQUIRED for OIDC
   contents: read
 
-# Use the same service principal JSON for both Azure CLI (if needed) and Terraform 
-env:
-  ARM_CLIENT_ID:        ${{ fromJson(secrets.AZURE_CREDENTIALS).clientId }}
-  ARM_CLIENT_SECRET:    ${{ fromJson(secrets.AZURE_CREDENTIALS).clientSecret }}
-  ARM_TENANT_ID:        ${{ fromJson(secrets.AZURE_CREDENTIALS).tenantId }}
-  ARM_SUBSCRIPTION_ID:  ${{ fromJson(secrets.AZURE_CREDENTIALS).subscriptionId }}
-
 jobs:
-  terraform-qa:
+  terraform:
+    name: 'Terraform QA'
     runs-on: ubuntu-latest
+    
+    # This parses your JSON secret and sets the variables Terraform needs
+    env:
+      ARM_CLIENT_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).clientId }}
+      ARM_SUBSCRIPTION_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).subscriptionId }}
+      ARM_TENANT_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).tenantId }}
+      ARM_USE_OIDC: true
 
     defaults:
       run:
-        working-directory: terraform/environments/qa
+        working-directory: ./terraform/environments/qa
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+    - name: Checkout Code
+      uses: actions/checkout@v4
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.9.8
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
 
-      - name: Terraform Init
-        run: terraform init -input=false
+    - name: Terraform Init
+      run: terraform init -input=false
 
-      - name: Terraform Plan
-        run: terraform plan -input=false
+    - name: Terraform Plan
+      run: terraform plan -out=tfplan -input=false
 
-      - name: Terraform Apply (only on main)
-        if: github.ref == 'refs/heads/main'
-        run: terraform apply -auto-approve -input=false
+    - name: Terraform Apply
+      if: github.ref == 'refs/heads/main'
+      run: terraform apply -input=false tfplan
