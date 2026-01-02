@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - 'src/backend-a/**'
-      - 'k8s/**'
+      - 'kubernetes/dev/**'
       - '.github/workflows/app-dev-backend.yml'
   workflow_dispatch:
 
@@ -72,7 +72,7 @@ jobs:
           export ACR_LOGIN_SERVER=${{ steps.acr.outputs.login_server }}
           export IMAGE_TAG=${{ github.sha }}
 
-          envsubst < k8s/backend-a-deployment.yaml | kubectl apply -f -
+          envsubst < kubernetes/dev/backend-a.yaml | kubectl apply -f -
 
       - name: Wait for deployment
         run: |
