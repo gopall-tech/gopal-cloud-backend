@@ -46,6 +46,32 @@ jobs:
 
       - name: Terraform Plan
         run: terraform plan
+        continue-on-error: true
+        id: plan
+        env:
+          ARM_CLIENT_ID: ${{ secrets.RM_CLIENT_ID }}
+          ARM_TENANT_ID: ${{ secrets.TENANTID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTIONID }}
+          ARM_USE_OIDC: true
+
+      - name: Force unlock if state is locked
+        if: failure() && steps.plan.outcome == 'failure'
+        run: |
+          # Extract lock ID if plan failed due to lock
+          LOCK_ID=$(terraform plan 2>&1 | grep "ID:" | awk '{print $2}' || echo "")
+          if [ -n "$LOCK_ID" ]; then
+            echo "Found lock ID: $LOCK_ID, attempting to unlock..."
+            echo "yes" | terraform force-unlock $LOCK_ID || true
+          fi
+        env:
+          ARM_CLIENT_ID: ${{ secrets.RM_CLIENT_ID }}
+          ARM_TENANT_ID: ${{ secrets.TENANTID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTIONID }}
+          ARM_USE_OIDC: true
+
+      - name: Retry Terraform Plan
+        if: failure() && steps.plan.outcome == 'failure'
+        run: terraform plan
         env:
           ARM_CLIENT_ID: ${{ secrets.RM_CLIENT_ID }}
           ARM_TENANT_ID: ${{ secrets.TENANTID }}
