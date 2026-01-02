@@ -52,6 +52,12 @@ jobs:
             --name gopal-aks-qa-eastus2 \
             --overwrite-existing
 
+      - name: Grant Key Vault access to Service Principal
+        run: |
+          KV_NAME=$(az keyvault list --resource-group Gopal-rg-qa-eastus2 --query "[0].name" -o tsv)
+          SP_OBJECT_ID=$(az ad sp show --id ${{ secrets.RM_CLIENT_ID }} --query id -o tsv)
+          az keyvault set-policy --name $KV_NAME --object-id $SP_OBJECT_ID --secret-permissions get list || true
+
       - name: Get Database connection string from Key Vault
         id: db
         run: |
